@@ -4,6 +4,8 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy import Column, Integer, String, ForeignKey
 
 # se importa información del archivo configuracion
+import datetime
+
 from configuracion import cadena_base_datos
 
 # se genera en enlace al gestor de base de
@@ -35,6 +37,24 @@ class Club(Base):
                           self.nombre, 
                           self.deporte, 
                           self.fundacion)
+    def obtener_anios_vida(self):
+        return datetime.datetime.now().year - self.fundacion
+
+    def obtener_dorsales_jugadores(self):
+        cadena = ""
+        lista = []
+        for l in self.jugadores:
+            cadena = "%s%d\n"% (cadena,l.dorsal)
+        return cadena
+
+    def obtener_suma_dorsales(self):
+        #suma = 0
+        #for l in self.jugadores:
+         #   suma = suma + l.dorsal
+         # se hace uso de lista compresa usando sum para que me vaya sumando  todos los dorsales
+         # de los jugadores de cada club, el self.jugadores me va a traer todos los jugadores
+        suma = sum([s.dorsal for s in self.jugadores])
+        return suma
 
 class Jugador(Base):
     __tablename__ = 'jugador'
@@ -52,6 +72,8 @@ class Jugador(Base):
     def __repr__(self):
         return "Jugador: %s - dorsal:%d - posición: %s" % (
                 self.nombre, self.dorsal, self.posicion)
+
+
 
 Base.metadata.create_all(engine)
 
