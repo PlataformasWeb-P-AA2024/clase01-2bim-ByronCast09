@@ -27,7 +27,17 @@ class Provincia(Base):
         return "Código División Política Administrativa Provincia: %d\n  Nombre de la Provincia=%s\n"% (
                           self.codigo_DPoliAdmiProvincia,
                           self.nombProvincia)
+# - A cada provincia perdile el número de docentes
+    def numero_docentes_provincia(self):
+        return session.query(Establecimiento.numDocentes).join(Parroquia).join(Canton).filter(Canton.codigo_DPoliAdmiProvincia == self.codigo_DPoliAdmiProvincia).count()
 
+#- A cada provincia preguntar la lista de parroquias
+    def obtener_lista_parroquias(self):
+        parroquias = session.query(Parroquia).join(Canton).filter(Canton.codigo_DPoliAdmiProvincia == self.codigo_DPoliAdmiProvincia).all()
+        nombres_parroquias = [parroquia.nombParroquia for parroquia in parroquias]
+        cadena = ",".join(nombres_parroquias)
+        return cadena
+    
 class Canton(Base):
     __tablename__ = 'cantones'
     id = Column(Integer, primary_key=True)
@@ -44,11 +54,13 @@ class Canton(Base):
     
     # Numero 1 : A cada, canton pedirle el numero de estudiantes
     def numero_estudiantes_canton(self):
-        suma = 0
-        for parroquia in self.parroquias:
-            for establecimiento in parroquia.establecimientos:
-                suma = suma + establecimiento.numEstudiantes
-        return suma
+        parroquias = session.query(Parroquia).filter_by(codigoDPoliAdmiCantón=self.codigoDPoliAdmiCantón).all()
+        total_estudiantes = 0
+        for parroquia in parroquias:
+            establecimientos = session.query(Establecimiento).filter_by(codigoDPoliAdmiParroquia=parroquia.codigoDPoliAdmiParroquia).all()
+            for establecimiento in establecimientos:
+                total_estudiantes += establecimiento.numEstudiantes
+        return total_estudiantes
 
 
 class Parroquia(Base):
@@ -58,12 +70,21 @@ class Parroquia(Base):
     nombParroquia = Column(String(100), nullable=False)
     codigoDPoliAdmiCantón = Column(Integer, ForeignKey('cantones.codigoDPoliAdmiCantón'), nullable=False, index=True)
     canton = relationship("Canton", backref="parroquias") #(un Canton tiene muchas Parroquias).
-    #establecimientos = relationship("Establecimiento", backref="parroquias")
     def __repr__(self):
         return "Codigo División Política Administrativa Parroquia: %d\n  Nombre de la Parroquia: %s\n  Código División Política Administrativa Cantón: %d"% (
                           self.codigoDPoliAdmiParroquia,
                           self.nombParroquia,
                           self.codigoDPoliAdmiCantón)
+    #- A cada parroaquia preguntar el número de establecimientos
+    def numero_establecimientos_parroquia(self):
+        return session.query(Establecimiento).filter_by(codigoDPoliAdmiParroquia=self.codigoDPoliAdmiParroquia).count()
+    
+     #- A cada parroquia preguntarle los tipos jornada de los establecimientos
+    def obtener_jornadas_establecimientos(self):
+        establecimientos = session.query(Establecimiento).filter_by(codigoDPoliAdmiParroquia=self.codigoDPoliAdmiParroquia).all()
+        tipos_jornada = [establecimiento.jornada for establecimiento in establecimientos]
+        cadena = ", ".join(set(tipos_jornada))
+        return cadena
 #------------------------
 class Establecimiento(Base):
     __tablename__ = 'establecimientos'
